@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Générateur de Prompts RCOTC – FormaSo</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --green:  #2F4F3E;
+      --orange: #D96A2B;
+      --yellow: #E8B73A;
+      --olive:  #6B7A2E;
+      --brown:  #6A4B3A;
+      --beige:  #FAF7F2;
+      --grey:   #8A8176;
+      --white:  #FFFFFF;
+    }
+
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: var(--beige);
+      min-height: 100vh;
+      padding-bottom: 48px;
+    }
+
+    /* HEADER */
+    header {
+      background: var(--green);
+      padding: 22px 32px 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    header .brand { color: var(--yellow); font-weight: 800; font-size: 22px; letter-spacing: 1px; }
+    header .subtitle { color: var(--white); font-size: 15px; margin-top: 2px; opacity: 0.9; }
+    header .badge {
+      background: rgba(255,255,255,0.12);
+      border-radius: 20px;
+      padding: 6px 18px;
+      color: var(--white);
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    /* MAIN */
+    .container { max-width: 780px; margin: 0 auto; padding: 0 20px; }
+
+    /* PROGRESS */
+    .progress-wrap { margin: 24px 0 8px; display: flex; align-items: center; gap: 14px; }
+    .progress-bar { flex: 1; background: #ddd; border-radius: 8px; height: 10px; overflow: hidden; }
+    .progress-fill { height: 100%; border-radius: 8px; transition: width 0.4s, background 0.4s; }
+    .progress-label { font-size: 13px; color: var(--grey); min-width: 100px; }
+    .progress-hint { font-size: 12px; color: var(--grey); margin-bottom: 20px; }
+
+    /* FIELD CARD */
+    .field-card {
+      background: var(--white);
+      border-radius: 12px;
+      margin-bottom: 16px;
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+      border: 2px solid transparent;
+      transition: border-color 0.3s;
+    }
+    .field-header {
+      padding: 10px 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .field-header .field-label { color: var(--white); font-weight: 700; font-size: 15px; }
+    .field-header .field-hint { color: rgba(255,255,255,0.75); font-size: 12px; }
+    .field-body { padding: 14px 18px; }
+    textarea {
+      width: 100%;
+      border: 1px solid #e0dbd5;
+      border-radius: 8px;
+      padding: 10px 12px;
+      font-size: 14px;
+      font-family: inherit;
+      color: var(--brown);
+      background: var(--beige);
+      resize: vertical;
+      outline: none;
+      line-height: 1.6;
+    }
+    .examples { margin-top: 8px; display: flex; flex-wrap: wrap; gap: 6px; }
+    .ex-btn {
+      background: transparent;
+      border-radius: 20px;
+      padding: 3px 12px;
+      font-size: 12px;
+      cursor: pointer;
+      transition: background 0.2s, color 0.2s;
+      font-family: inherit;
+    }
+
+    /* PREVIEW */
+    .preview-box {
+      background: var(--white);
+      border-radius: 12px;
+      border: 2px solid var(--yellow);
+      margin-bottom: 20px;
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    }
+    .preview-header {
+      background: var(--yellow);
+      padding: 10px 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .preview-header span { font-weight: 700; color: var(--brown); font-size: 15px; }
+    pre.preview-content {
+      margin: 0;
+      padding: 16px 18px;
+      font-size: 13px;
+      font-family: inherit;
+      line-height: 1.7;
+      white-space: pre-wrap;
+      word-break: break-word;
+      background: #f6faf7;
+      min-height: 60px;
+    }
+
+    /* ACTIONS */
+    .actions { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 24px; }
+    .btn {
+      flex: 1;
+      min-width: 160px;
+      border: none;
+      border-radius: 10px;
+      padding: 14px 20px;
+      font-size: 15px;
+      font-weight: 700;
+      font-family: inherit;
+      cursor: pointer;
+      transition: background 0.2s, opacity 0.2s;
+      color: var(--white);
+    }
+    .btn:disabled { background: #ccc !important; cursor: not-allowed; }
+    .btn-improve { background: var(--olive); }
+    .btn-generate { background: var(--orange); }
+    .btn-reset {
+      background: transparent;
+      border: 2px solid var(--grey);
+      color: var(--grey);
+      flex: 0 0 auto;
+      min-width: unset;
+    }
+
+    /* COPY BTN */
+    .copy-btn {
+      border: none;
+      border-radius: 8px;
+      padding: 5px 16px;
+      font-size: 13px;
+      cursor: pointer;
+      font-weight: 700;
+      font-family: inherit;
+      transition: background 0.2s, color 0.2s;
+    }
+
+    /* IMPROVED BOX */
+    .improved-box {
+      background: var(--white);
+      border-radius: 12px;
+      border: 2px solid var(--olive);
+      margin-bottom: 20px;
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    }
+    .improved-header {
+      background: var(--olive);
+      padding: 10px 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .improved-header span { font-weight: 700; color: var(--white); font-size: 15px; }
+
+    /* RESPONSE BOX */
+    .response-box {
+      background: var(--white);
+      border-radius: 12px;
+      border: 2px solid var(--green);
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    }
+    .response-header { background: var(--green); padding: 10px 18px; }
+    .response-header span { color: var(--white); font-weight: 700; font-size: 15px; }
+    .response-content { padding: 18px; font-size: 14px; color: var(--brown); line-height: 1.8; white-space: pre-wrap; }
+
+    /* HIDDEN */
+    .hidden { display: none; }
+
+    @media (max-width: 500px) {
+      header { padding: 16px 16px 14px; }
+      .container { padding: 0 12px; }
+      .btn { font-size: 14px; padding: 12px 14px; }
+      .field-header { flex-direction: column; align-items: flex-start; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div>
+    <div class="brand">FormaSo</div>
+    <div class="subtitle">Générateur de Prompts Professionnels</div>
+  </div>
+  <div class="badge">Méthode R.C.O.T.C</div>
+</header>
+
+<div class="container">
+
+  <!-- PROGRESS -->
+  <div class="progress-wrap">
+    <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%;background:var(--orange)"></div></div>
+    <span class="progress-label" id="progressLabel">0/5 champs · <b>0%</b></span>
+  </div>
+  <div class="progress-hint" id="progressHint">💡 Complétez davantage pour un prompt efficace</div>
+
+  <!-- FIELDS -->
+  <div id="fields"></div>
+
+  <!-- PREVIEW -->
+  <div class="preview-box">
+    <div class="preview-header">
+      <span>✨ Votre prompt assemblé</span>
+    </div>
+    <pre class="preview-content" id="previewContent" style="color:var(--grey)">← Remplissez les champs ci-dessus pour voir votre prompt apparaître ici…</pre>
+  </div>
+
+  <!-- ACTIONS -->
+  <div class="actions">
+    <button class="btn btn-improve" id="btnImprove" onclick="improvePrompt()" disabled>✨ Améliorer mon prompt</button>
+    <button class="btn btn-generate" id="btnCopyPrompt" onclick="copyPrompt()" disabled>📋 Copier le prompt</button>
+    <button class="btn btn-generate" id="btnGenerate" onclick="generateResponse()" disabled>🚀 Générer avec Claude</button>
+    <button class="btn btn-reset" onclick="resetAll()">🔄 Réinitialiser</button>
+  </div>
+
+  <!-- IMPROVED -->
+  <div class="improved-box hidden" id="improvedBox">
+    <div class="improved-header">
+      <span>✨ Prompt optimisé par Claude</span>
+      <button class="copy-btn" id="btnCopyImproved" onclick="copyImproved()"
+        style="background:rgba(255,255,255,0.25);color:var(--white)">📋 Copier le prompt optimisé</button>
+    </div>
+    <pre class="preview-content" id="improvedContent" style="color:var(--green)"></pre>
+  </div>
+
+  <!-- RESPONSE -->
+  <div class="response-box hidden" id="responseBox">
+    <div class="response-header"><span>🤖 Réponse de Claude</span></div>
+    <div class="response-content" id="responseContent"></div>
+  </div>
+
+</div>
+
+<script>
+  const FIELDS = [
+    { key: "role",       label: "R — Rôle",        color: "#2F4F3E", icon: "👤", placeholder: "Ex : Tu es un expert en marketing digital spécialisé en réseaux sociaux B2B", hint: "Définissez l'identité et l'expertise que l'IA doit incarner", examples: ["Expert en RH et recrutement", "Consultant en stratégie commerciale", "Formateur spécialisé en andragogie"] },
+    { key: "contexte",   label: "C — Contexte",     color: "#6B7A2E", icon: "🌍", placeholder: "Ex : Une TPE de 8 salariés dans le secteur retail souhaite développer sa présence LinkedIn", hint: "Décrivez la situation, l'environnement, les enjeux", examples: ["PME en phase de croissance, secteur agro-alimentaire", "Équipe de 5 formateurs, organisme Qualiopi", "Dirigeant de TPE sans compétences digitales"] },
+    { key: "objectif",   label: "O — Objectif",     color: "#D96A2B", icon: "🎯", placeholder: "Ex : Créer un plan de contenu mensuel pour augmenter l'engagement de 30%", hint: "Formulez le résultat attendu de façon précise et mesurable", examples: ["Rédiger une fiche de poste claire et attractive", "Produire un plan de formation conforme Qualiopi", "Générer 5 idées de posts LinkedIn engageants"] },
+    { key: "taches",     label: "T — Tâches",       color: "#6A4B3A", icon: "📋", placeholder: "Ex : 1. Analyser les tendances / 2. Proposer 8 thématiques / 3. Rédiger les accroches", hint: "Listez les actions concrètes à réaliser, étape par étape", examples: ["1. Identifier les besoins / 2. Structurer / 3. Rédiger", "Analyser, synthétiser, recommander", "Créer, tester, ajuster"] },
+    { key: "contraintes",label: "C — Contraintes",  color: "#8A8176", icon: "⚙️", placeholder: "Ex : Ton professionnel mais accessible, bullet points, 500 mots max, sans jargon", hint: "Précisez le format, le ton, la longueur, les limites", examples: ["Français, 300 mots max, ton bienveillant", "Format tableau, sans données chiffrées", "Niveau BTS, sans anglicismes, exemples concrets"] },
+  ];
+
+  const state = { role: "", contexte: "", objectif: "", taches: "", contraintes: "", improved: "" };
+
+  // BUILD FIELDS
+  const container = document.getElementById("fields");
+  FIELDS.forEach(f => {
+    const card = document.createElement("div");
+    card.className = "field-card";
+    card.id = "card-" + f.key;
+    card.innerHTML = `
+      <div class="field-header" style="background:${f.color}">
+        <span class="field-label">${f.icon} ${f.label}</span>
+        <span class="field-hint">${f.hint}</span>
+      </div>
+      <div class="field-body">
+        <textarea id="ta-${f.key}" rows="3" placeholder="${f.placeholder}" oninput="onInput('${f.key}', this.value)"></textarea>
+        <div class="examples" id="ex-${f.key}">
+          ${f.examples.map(ex => `<button class="ex-btn" style="border:1px solid ${f.color};color:${f.color}"
+            onmouseover="this.style.background='${f.color}';this.style.color='#fff'"
+            onmouseout="this.style.background='transparent';this.style.color='${f.color}'"
+            onclick="useExample('${f.key}','${ex.replace(/'/g,"\\'")}')">
+            ${ex.length > 35 ? ex.slice(0,34)+"…" : ex}
+          </button>`).join("")}
+        </div>
+      </div>`;
+    container.appendChild(card);
+  });
+
+  function onInput(key, val) {
+    state[key] = val;
+    document.getElementById("card-" + key).style.borderColor = val.trim() ? getColor(key) : "transparent";
+    updatePreview();
+    updateProgress();
+  }
+
+  function useExample(key, val) {
+    state[key] = val;
+    document.getElementById("ta-" + key).value = val;
+    document.getElementById("card-" + key).style.borderColor = getColor(key);
+    updatePreview();
+    updateProgress();
+  }
+
+  function getColor(key) { return FIELDS.find(f => f.key === key)?.color || "#ccc"; }
+
+  function assemblePrompt() {
+    return FIELDS.map(f => state[f.key]?.trim() ? `[${f.label.split(" — ")[1].toUpperCase()}] ${state[f.key].trim()}` : null).filter(Boolean).join("\n\n");
+  }
+
+  function updatePreview() {
+    const p = assemblePrompt();
+    const el = document.getElementById("previewContent");
+    el.textContent = p || "← Remplissez les champs ci-dessus pour voir votre prompt apparaître ici…";
+    el.style.color = p ? "var(--green)" : "var(--grey)";
+    document.getElementById("btnImprove").disabled = !p;
+    document.getElementById("btnGenerate").disabled = !p;
+    document.getElementById("btnCopyPrompt").disabled = !p;
+  }
+
+  function updateProgress() {
+    let score = 0;
+    let filled = 0;
+    FIELDS.forEach(f => {
+      const v = state[f.key]?.trim() || "";
+      if (v.length > 10) { score += 15; filled++; }
+      if (v.length > 40) score += 5;
+    });
+    score = Math.min(score, 100);
+    const color = score < 40 ? "var(--orange)" : score < 75 ? "var(--yellow)" : "var(--olive)";
+    const fill = document.getElementById("progressFill");
+    fill.style.width = score + "%";
+    fill.style.background = color;
+    document.getElementById("progressLabel").innerHTML = `${filled}/5 champs · <b style="color:${color}">${score}%</b>`;
+    document.getElementById("progressHint").textContent = score < 40 ? "💡 Complétez davantage pour un prompt efficace" : score < 75 ? "👍 Bon départ — enrichissez vos champs" : "✅ Prompt bien structuré";
+  }
+
+  async function callClaude(messages) {
+    const res = await fetch("/.netlify/functions/claude", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ messages })
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      throw new Error(data.error || "Erreur lors de l'appel à Claude.");
+    }
+
+    return data.text || "";
+  }
+
+  async function improvePrompt() {
+    const prompt = assemblePrompt();
+    if (!prompt) return;
+    const btn = document.getElementById("btnImprove");
+    btn.disabled = true;
+    btn.textContent = "⏳ Amélioration en cours…";
+    document.getElementById("improvedBox").classList.add("hidden");
+    try {
+      const result = await callClaude([{ role: "user", content: `Tu es un expert en prompt engineering. Voici un prompt structuré selon la méthode RCOTC :\n\n${prompt}\n\nAméliore ce prompt pour le rendre plus précis, professionnel et efficace. Conserve impérativement la structure RCOTC avec les mêmes balises [RÔLE], [CONTEXTE], [OBJECTIF], [TÂCHES], [CONTRAINTES]. Enrichis chaque section sans la dénaturer. Réponds uniquement avec le prompt amélioré, sans commentaire ni introduction.` }]);
+      state.improved = result;
+      document.getElementById("improvedContent").textContent = result;
+      document.getElementById("improvedBox").classList.remove("hidden");
+    } catch { alert("Erreur lors de l'amélioration. Vérifiez votre connexion."); }
+    btn.disabled = false;
+    btn.textContent = "✨ Améliorer mon prompt";
+  }
+
+  async function generateResponse() {
+    const prompt = assemblePrompt();
+    if (!prompt) return;
+    const btn = document.getElementById("btnGenerate");
+    btn.disabled = true;
+    btn.textContent = "⏳ Génération en cours…";
+    document.getElementById("responseBox").classList.add("hidden");
+    try {
+      const result = await callClaude([{ role: "user", content: prompt }]);
+      document.getElementById("responseContent").textContent = result;
+      document.getElementById("responseBox").classList.remove("hidden");
+    } catch { alert("Erreur lors de la génération. Vérifiez votre connexion."); }
+    btn.disabled = false;
+    btn.textContent = "🚀 Générer avec Claude";
+  }
+
+  function copyPrompt() {
+    const prompt = assemblePrompt();
+    navigator.clipboard.writeText(prompt || "");
+    const btn = document.getElementById("btnCopyPrompt");
+    btn.textContent = "✅ Prompt copié !";
+    setTimeout(() => { btn.textContent = "📋 Copier le prompt"; }, 2000);
+  }
+
+  function copyImproved() {
+    navigator.clipboard.writeText(state.improved || "");
+    const btn = document.getElementById("btnCopyImproved");
+    btn.textContent = "✅ Copié !";
+    btn.style.background = "var(--green)";
+    setTimeout(() => { btn.textContent = "📋 Copier le prompt optimisé"; btn.style.background = "rgba(255,255,255,0.25)"; }, 2000);
+  }
+
+  function resetAll() {
+    FIELDS.forEach(f => { state[f.key] = ""; document.getElementById("ta-" + f.key).value = ""; document.getElementById("card-" + f.key).style.borderColor = "transparent"; });
+    state.improved = "";
+    updatePreview();
+    updateProgress();
+    document.getElementById("improvedBox").classList.add("hidden");
+    document.getElementById("responseBox").classList.add("hidden");
+  }
+</script>
+</body>
+</html>
